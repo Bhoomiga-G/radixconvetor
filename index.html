@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radix Converter</title>
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --card-bg: #16213e;
+            --primary: #0f3460;
+            --secondary: #533483;
+            --accent: #e94560;
+            --text: #f1f1f1;
+            --input-bg: #0f3460;
+            --border: #2a2a4a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 600px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: var(--accent);
+            font-size: 2.2rem;
+        }
+
+        .converter-box {
+            background: var(--primary);
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        input, select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid var(--border);
+            border-radius: 5px;
+            background-color: var(--input-bg);
+            color: var(--text);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(233, 69, 96, 0.3);
+        }
+
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: #d13a55;
+            transform: translateY(-2px);
+        }
+
+        .result {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: var(--secondary);
+            border-radius: 5px;
+            text-align: center;
+            font-size: 1.2rem;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            word-break: break-all;
+        }
+
+        .history {
+            margin-top: 2rem;
+        }
+
+        .history h2 {
+            color: var(--accent);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .history-list {
+            max-height: 200px;
+            overflow-y: auto;
+            background: var(--primary);
+            border-radius: 10px;
+            padding: 1rem;
+        }
+
+        .history-item {
+            padding: 0.8rem;
+            border-bottom: 1px solid var(--border);
+            font-family: monospace;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .clear-btn {
+            margin-top: 1rem;
+            background: var(--secondary);
+        }
+
+        .clear-btn:hover {
+            background: #3d2a5f;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .container {
+                padding: 1.5rem;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Number System Converter</h1>
+        
+        <div class="converter-box">
+            <div class="input-group">
+                <label for="number">Enter Number:</label>
+                <input type="text" id="number" placeholder="e.g., 1A3F">
+            </div>
+            
+            <div class="input-group">
+                <label for="fromBase">From Base (2-36):</label>
+                <input type="number" id="fromBase" min="2" max="36" value="10" placeholder="e.g., 16">
+            </div>
+            
+            <div class="input-group">
+                <label for="toBase">To Base (2-36):</label>
+                <input type="number" id="toBase" min="2" max="36" value="2" placeholder="e.g., 2">
+            </div>
+            
+            <button id="convertBtn">Convert</button>
+            
+            <div class="result" id="result">
+                Result will appear here
+            </div>
+        </div>
+        
+        <div class="history">
+            <h2>Conversion History</h2>
+            <div class="history-list" id="historyList">
+                <div class="history-empty">No conversion history yet</div>
+            </div>
+            <button class="clear-btn" id="clearHistory">Clear History</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const numberInput = document.getElementById('number');
+            const fromBaseInput = document.getElementById('fromBase');
+            const toBaseInput = document.getElementById('toBase');
+            const convertBtn = document.getElementById('convertBtn');
+            const resultDiv = document.getElementById('result');
+            const historyList = document.getElementById('historyList');
+            const clearHistoryBtn = document.getElementById('clearHistory');
+            
+            let history = JSON.parse(localStorage.getItem('conversionHistory')) || [];
+            
+            // Display history on load
+            updateHistoryDisplay();
+            
+            convertBtn.addEventListener('click', convertNumber);
+            clearHistoryBtn.addEventListener('click', clearHistory);
+            
+            // Also convert when pressing Enter in any input
+            [numberInput, fromBaseInput, toBaseInput].forEach(input => {
+                input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        convertNumber();
+                    }
+                });
+            });
+            
+            function convertNumber() {
+                const numStr = numberInput.value.trim().toUpperCase();
+                const fromBase = parseInt(fromBaseInput.value);
+                const toBase = parseInt(toBaseInput.value);
+                
+                // Validation
+                if (!isValidNumber(numStr, fromBase)) {
+                    resultDiv.textContent = 'Invalid number for the given base!';
+                    resultDiv.style.color = '#ff6b6b';
+                    return;
+                }
+                
+                if (fromBase < 2 || fromBase > 36 || toBase < 2 || toBase > 36) {
+                    resultDiv.textContent = 'Bases must be between 2 and 36!';
+                    resultDiv.style.color = '#ff6b6b';
+                    return;
+                }
+                
+                try {
+                    const decimal = parseInt(numStr, fromBase);
+                    const result = convertBase(decimal, toBase);
+                    
+                    // Display result
+                    resultDiv.innerHTML = `
+                        <div>${numStr}<sub>${fromBase}</sub> = <strong>${result}</strong><sub>${toBase}</sub></div>
+                        <div style="margin-top: 8px; font-size: 0.9rem; opacity: 0.9;">
+                            (Decimal: ${decimal}<sub>10</sub>)
+                        </div>
+                    `;
+                    resultDiv.style.color = 'var(--text)';
+                    
+                    // Add to history
+                    const historyItem = `${numStr}<sub>${fromBase}</sub> → ${result}<sub>${toBase}</sub>`;
+                    history.unshift(historyItem);
+                    if (history.length > 10) history.pop(); // Keep only last 10 items
+                    
+                    // Save to localStorage
+                    localStorage.setItem('conversionHistory', JSON.stringify(history));
+                    
+                    // Update history display
+                    updateHistoryDisplay();
+                    
+                } catch (error) {
+                    resultDiv.textContent = 'Error during conversion: ' + error.message;
+                    resultDiv.style.color = '#ff6b6b';
+                }
+            }
+            
+            function convertBase(decimal, toBase) {
+                if (decimal === 0) return "0";
+                const digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                let result = "";
+                while (decimal > 0) {
+                    result = digits[decimal % toBase] + result;
+                    decimal = Math.floor(decimal / toBase);
+                }
+                return result;
+            }
+            
+            function isValidNumber(numStr, base) {
+                if (base < 2 || base > 36) return false;
+                const validChars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".slice(0, base);
+                return numStr.split('').every(char => validChars.includes(char));
+            }
+            
+            function updateHistoryDisplay() {
+                if (history.length === 0) {
+                    historyList.innerHTML = '<div class="history-empty">No conversion history yet</div>';
+                    return;
+                }
+                
+                historyList.innerHTML = history.map((item, index) => 
+                    `<div class="history-item">${index + 1}. ${item}</div>`
+                ).join('');
+            }
+            
+            function clearHistory() {
+                if (confirm('Are you sure you want to clear the conversion history?')) {
+                    history = [];
+                    localStorage.removeItem('conversionHistory');
+                    updateHistoryDisplay();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
